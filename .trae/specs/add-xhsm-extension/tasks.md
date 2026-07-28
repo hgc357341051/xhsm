@@ -34,12 +34,12 @@
   - [x] SubTask 6.4: 实现自定义版本注册与版本列表查询
   - [x] SubTask 6.5: 编写 PHP 测试覆盖版本切换、注册、列表与签名验签
 
-- [ ] Task 7: 实现业务场景预设
-  - [ ] SubTask 7.1: 实现 `Xhsm\Scenario\Finance`（金融：ASN.1 DER + GB/T 标准）
-  - [ ] SubTask 7.2: 实现 `Xhsm\Scenario\Payment`（支付：主流支付协议格式）
-  - [ ] SubTask 7.3: 实现 `Xhsm\Scenario\Government`（政府：政务 PKI 标准）
-  - [ ] SubTask 7.4: 实现 `Xhsm\Scenario\MiniProgram`（小程序：主流小程序平台格式）
-  - [ ] SubTask 7.5: 编写 PHP 测试验证各场景输出格式与往返
+- [x] Task 7: 实现业务场景预设
+  - [x] SubTask 7.1: 实现 `Xhsm\Scenario\Finance`（金融：ASN.1 DER + GB/T 标准）
+  - [x] SubTask 7.2: 实现 `Xhsm\Scenario\Payment`（支付：主流支付协议格式）
+  - [x] SubTask 7.3: 实现 `Xhsm\Scenario\Government`（政府：政务 PKI 标准）
+  - [x] SubTask 7.4: 实现 `Xhsm\Scenario\MiniProgram`（小程序：主流小程序平台格式）
+  - [x] SubTask 7.5: 编写 PHP 测试验证各场景输出格式与往返
 
 - [ ] Task 8: 异常处理与错误传播
   - [ ] SubTask 8.1: 定义 `Xhsm\Exception` 异常类（错误码 + 消息字段）

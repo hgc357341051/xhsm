@@ -7,18 +7,22 @@
 // - Task 4：SM2 非对称加解密与签名验签（Xhsm\Sm2）
 // - Task 5：SM9 标识基加解密与签名验签（Xhsm\Sm9）
 // - Task 6：可扩展签名版本体系（Xhsm\Signature，内置 s2/s3/s4）
+// - Task 7：业务场景预设（Xhsm\Scenario\Finance/Payment/Government/MiniProgram）
 // - 异常统一为 Xhsm\Exception
 
 use ext_php_rs::prelude::*;
 
 mod exception;
+mod scenario;
 mod signature;
+mod sign_util;
 mod sm2;
 mod sm3;
 mod sm4;
 mod sm9;
 
 use exception::Exception;
+use scenario::{Finance, Government, MiniProgram, Payment};
 use signature::Signature;
 use sm2::Sm2;
 use sm3::Sm3;
@@ -42,6 +46,10 @@ pub fn xhsm_version() -> String {
 /// - Xhsm\Sm4：SM4 对称算法
 /// - Xhsm\Sm9：SM9 标识基算法
 /// - Xhsm\Signature：可扩展签名版本体系
+/// - Xhsm\Scenario\Finance：金融业务场景预设
+/// - Xhsm\Scenario\Payment：支付业务场景预设
+/// - Xhsm\Scenario\Government：政务业务场景预设
+/// - Xhsm\Scenario\MiniProgram：小程序业务场景预设
 #[php_module]
 pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
     module
@@ -52,4 +60,8 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .class::<Sm4>()
         .class::<Sm9>()
         .class::<Signature>()
+        .class::<Finance>()
+        .class::<Payment>()
+        .class::<Government>()
+        .class::<MiniProgram>()
 }
