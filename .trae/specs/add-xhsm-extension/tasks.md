@@ -57,10 +57,10 @@
   - [x] SubTask 10.3: 实现配置发布命令 `php think xhsm:publish`，生成 `config/xhsm.php`
   - [x] SubTask 10.4: 在 ThinkPHP 8 项目中集成验证调用链（`Xhsm::sm2()->sign(...)`）
 
-- [ ] Task 11: 文档与示例
-  - [ ] SubTask 11.1: 完善 README 使用示例（各算法、各场景、签名版本）
-  - [ ] SubTask 11.2: 补充构建与安装说明（cargo / cargo-php / php.ini）
-  - [ ] SubTask 11.3: 整理已知测试向量清单
+- [x] Task 11: 文档与示例
+  - [x] SubTask 11.1: 完善 README 使用示例（各算法、各场景、签名版本）
+  - [x] SubTask 11.2: 补充构建与安装说明（cargo / cargo-php / php.ini）
+  - [x] SubTask 11.3: 整理已知测试向量清单
 
 # Task Dependencies
 - Task 2 / Task 3 / Task 4 相互无依赖，可并行
