@@ -6,17 +6,20 @@
 // - Task 3：SM4 对称加密 ECB/CBC/CTR/GCM（Xhsm\Sm4）
 // - Task 4：SM2 非对称加解密与签名验签（Xhsm\Sm2）
 // - Task 5：SM9 标识基加解密与签名验签（Xhsm\Sm9）
+// - Task 6：可扩展签名版本体系（Xhsm\Signature，内置 s2/s3/s4）
 // - 异常统一为 Xhsm\Exception
 
 use ext_php_rs::prelude::*;
 
 mod exception;
+mod signature;
 mod sm2;
 mod sm3;
 mod sm4;
 mod sm9;
 
 use exception::Exception;
+use signature::Signature;
 use sm2::Sm2;
 use sm3::Sm3;
 use sm4::Sm4;
@@ -38,6 +41,7 @@ pub fn xhsm_version() -> String {
 /// - Xhsm\Sm3：SM3 杂凑算法
 /// - Xhsm\Sm4：SM4 对称算法
 /// - Xhsm\Sm9：SM9 标识基算法
+/// - Xhsm\Signature：可扩展签名版本体系
 #[php_module]
 pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
     module
@@ -47,4 +51,5 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .class::<Sm3>()
         .class::<Sm4>()
         .class::<Sm9>()
+        .class::<Signature>()
 }

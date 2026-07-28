@@ -27,12 +27,12 @@
   - [x] SubTask 5.3: 实现标识加解密与标识签名验签
   - [x] SubTask 5.4: 编写 PHP 测试验证标识加解密与签名往返
 
-- [ ] Task 6: 实现可扩展签名版本体系
-  - [ ] SubTask 6.1: 设计签名版本配置结构（算法、格式、编码、用户 ID 等字段）
-  - [ ] SubTask 6.2: 实现版本注册表（线程安全）与 `Xhsm\Signature` 类（`sign` / `verify` / `register` / `versions`）
-  - [ ] SubTask 6.3: 内置 s2 / s3 / s4 三个版本，明确各自配置差异
-  - [ ] SubTask 6.4: 实现自定义版本注册与版本列表查询
-  - [ ] SubTask 6.5: 编写 PHP 测试覆盖版本切换、注册、列表与签名验签
+- [x] Task 6: 实现可扩展签名版本体系
+  - [x] SubTask 6.1: 设计签名版本配置结构（算法、格式、编码、用户 ID 等字段）
+  - [x] SubTask 6.2: 实现版本注册表（线程安全）与 `Xhsm\Signature` 类（`sign` / `verify` / `register` / `versions`）
+  - [x] SubTask 6.3: 内置 s2 / s3 / s4 三个版本，明确各自配置差异
+  - [x] SubTask 6.4: 实现自定义版本注册与版本列表查询
+  - [x] SubTask 6.5: 编写 PHP 测试覆盖版本切换、注册、列表与签名验签
 
 - [ ] Task 7: 实现业务场景预设
   - [ ] SubTask 7.1: 实现 `Xhsm\Scenario\Finance`（金融：ASN.1 DER + GB/T 标准）
