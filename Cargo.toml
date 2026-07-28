@@ -9,3 +9,25 @@ crate-type = ["cdylib"]
 [dependencies]
 # ext-php-rs 0.15 自带 build.rs，会通过 php-config 自动探测 PHP 头文件
 ext-php-rs = "0.15"
+
+# ===== 国密算法依赖（纯 Rust，不链接系统 libssl/libcrypto）=====
+
+# SM2：使用 smcrypto crate，提供密钥对生成、加解密（C1C3C2/C1C2C3/ASN.1）、签名验签
+smcrypto = "0.3"
+
+# SM3：使用 RustCrypto 的 sm3 + hmac 组合实现哈希与 HMAC-SM3
+sm3 = "0.4"
+hmac = "0.12"
+
+# SM4：使用 RustCrypto 的 sm4 块密码 + 工作模式 crate
+# GCM 模式因 RustCrypto 通用 gcm crate 停留在 cipher 0.2 不可用，
+# 改为使用 ghash crate 手动实现 GCM（CTR + GHASH），与 sm4 0.5 的 cipher 0.4 生态对齐
+sm4 = "0.5"
+cipher = "0.4"
+cbc = { version = "0.1", features = ["alloc"] }
+ecb = { version = "0.1", features = ["alloc"] }
+ctr = "0.9"
+ghash = "0.5"
+
+# hex 编解码工具
+hex = "0.4"
