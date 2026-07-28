@@ -1,0 +1,34 @@
+{
+    "name": "xhsm/thinkphp",
+    "description": "ThinkPHP 8 适配层 for xhsm 国密算法 PHP 扩展（SM2/SM3/SM4/SM9/Signature/Scenario）",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["xhsm", "thinkphp", "国密", "sm2", "sm3", "sm4", "sm9", "crypto"],
+    "authors": [
+        {
+            "name": "xhsm"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "topthink/framework": "^8.0"
+    },
+    "suggest": {
+        "ext-xhsm": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Xhsm\\Think\\": "src/"
+        }
+    },
+    "extra": {
+        "think": {
+            "services": [
+                "Xhsm\\Think\\ServiceProvider"
+            ],
+            "config": {
+                "xhsm": "config/xhsm.php"
+            }
+        }
+    }
+}

@@ -51,11 +51,11 @@
   - [ ] SubTask 9.2: 在无 openssl 开发库环境构建并加载扩展，跑通全部用例
   - [ ] SubTask 9.3: 记录 `ldd xhsm.so` 输出证明无系统 openssl 依赖
 
-- [ ] Task 10: ThinkPHP 8 适配层
-  - [ ] SubTask 10.1: 创建 PHP composer 包目录 `php/` 与 `composer.json`（声明 `topthink/framework: ^8.0`）
-  - [ ] SubTask 10.2: 实现 ServiceProvider 与 Facade（`Xhsm` 门面）
-  - [ ] SubTask 10.3: 实现配置发布命令 `php think xhsm:publish`，生成 `config/xhsm.php`
-  - [ ] SubTask 10.4: 在 ThinkPHP 8 项目中集成验证调用链（`Xhsm::sm2()->sign(...)`）
+- [x] Task 10: ThinkPHP 8 适配层
+  - [x] SubTask 10.1: 创建 PHP composer 包目录 `php/` 与 `composer.json`（声明 `topthink/framework: ^8.0`）
+  - [x] SubTask 10.2: 实现 ServiceProvider 与 Facade（`Xhsm` 门面）
+  - [x] SubTask 10.3: 实现配置发布命令 `php think xhsm:publish`，生成 `config/xhsm.php`
+  - [x] SubTask 10.4: 在 ThinkPHP 8 项目中集成验证调用链（`Xhsm::sm2()->sign(...)`）
 
 - [ ] Task 11: 文档与示例
   - [ ] SubTask 11.1: 完善 README 使用示例（各算法、各场景、签名版本）
