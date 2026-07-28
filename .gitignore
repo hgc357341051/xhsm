@@ -1,0 +1,5 @@
+# Rust 构建产物
+/target/
+
+# cargo-php 等工具产生的临时文件
+*.rs.bk

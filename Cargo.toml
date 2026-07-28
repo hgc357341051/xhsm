@@ -1,0 +1,11 @@
+[package]
+name = "xhsm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# ext-php-rs 0.15 自带 build.rs，会通过 php-config 自动探测 PHP 头文件
+ext-php-rs = "0.15"
