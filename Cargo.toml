@@ -29,5 +29,9 @@ ecb = { version = "0.1", features = ["alloc"] }
 ctr = "0.9"
 ghash = "0.5"
 
+# SM9：使用 sm9 crate（纯 Rust，基于 sm9_core 双线性对实现，GM/T 0044-2016）
+# 提供主密钥生成、用户私钥抽取、加解密、签名验签
+sm9 = "0.4"
+
 # hex 编解码工具
 hex = "0.4"

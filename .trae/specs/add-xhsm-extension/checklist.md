@@ -6,7 +6,7 @@
 - [ ] `Xhsm\Sm2` 支持密钥对生成（压缩/非压缩）、加解密（C1C2C3/C1C3C2）、签名/验签（ASN.1 DER / raw hex）
 - [ ] `Xhsm\Sm3` 支持 `hash` 与 `hmac`，输出 32 字节摘要 hex
 - [ ] `Xhsm\Sm4` 支持 ECB / CBC / CTR / GCM 四种模式，PKCS#7 填充与 GCM Tag 校验正确
-- [ ] `Xhsm\Sm9` 支持主密钥生成、用户私钥抽取、标识加解密、标识签名验签
+- [x] `Xhsm\Sm9` 支持主密钥生成、用户私钥抽取、标识加解密、标识签名验签
 - [ ] `Xhsm\Signature` 内置 s2 / s3 / s4 三个版本，每个版本可配置算法/格式/编码/用户 ID
 - [ ] `Xhsm\Signature::register()` 支持注册自定义版本（如 s5）
 - [ ] `Xhsm\Signature::versions()` 返回已注册版本列表

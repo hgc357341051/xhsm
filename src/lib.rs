@@ -5,6 +5,7 @@
 // - Task 2：SM3 摘要与 HMAC-SM3（Xhsm\Sm3）
 // - Task 3：SM4 对称加密 ECB/CBC/CTR/GCM（Xhsm\Sm4）
 // - Task 4：SM2 非对称加解密与签名验签（Xhsm\Sm2）
+// - Task 5：SM9 标识基加解密与签名验签（Xhsm\Sm9）
 // - 异常统一为 Xhsm\Exception
 
 use ext_php_rs::prelude::*;
@@ -13,11 +14,13 @@ mod exception;
 mod sm2;
 mod sm3;
 mod sm4;
+mod sm9;
 
 use exception::Exception;
 use sm2::Sm2;
 use sm3::Sm3;
 use sm4::Sm4;
+use sm9::Sm9;
 
 /// 返回 xhsm 扩展的版本号字符串。
 ///
@@ -34,6 +37,7 @@ pub fn xhsm_version() -> String {
 /// - Xhsm\Sm2：SM2 非对称算法
 /// - Xhsm\Sm3：SM3 杂凑算法
 /// - Xhsm\Sm4：SM4 对称算法
+/// - Xhsm\Sm9：SM9 标识基算法
 #[php_module]
 pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
     module
@@ -42,4 +46,5 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .class::<Sm2>()
         .class::<Sm3>()
         .class::<Sm4>()
+        .class::<Sm9>()
 }
