@@ -46,10 +46,10 @@
   - [x] SubTask 8.2: 将 Rust 层 `Result::Err` 统一映射为 `Xhsm\Exception` 抛出
   - [x] SubTask 8.3: 编写 PHP 测试验证异常码与可读消息
 
-- [ ] Task 9: 不依赖 OpenSSL 验证
-  - [ ] SubTask 9.1: 审查 Cargo 依赖树（`cargo tree`），确认无 libssl/libcrypto 传递链接
-  - [ ] SubTask 9.2: 在无 openssl 开发库环境构建并加载扩展，跑通全部用例
-  - [ ] SubTask 9.3: 记录 `ldd xhsm.so` 输出证明无系统 openssl 依赖
+- [x] Task 9: 不依赖 OpenSSL 验证
+  - [x] SubTask 9.1: 审查 Cargo 依赖树（`cargo tree`），确认无 libssl/libcrypto 传递链接
+  - [x] SubTask 9.2: 在无 openssl 开发库环境构建并加载扩展，跑通全部用例
+  - [x] SubTask 9.3: 记录 `ldd xhsm.so` 输出证明无系统 openssl 依赖
 
 - [x] Task 10: ThinkPHP 8 适配层
   - [x] SubTask 10.1: 创建 PHP composer 包目录 `php/` 与 `composer.json`（声明 `topthink/framework: ^8.0`）
