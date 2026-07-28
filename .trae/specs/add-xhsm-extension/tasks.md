@@ -41,10 +41,10 @@
   - [x] SubTask 7.4: 实现 `Xhsm\Scenario\MiniProgram`（小程序：主流小程序平台格式）
   - [x] SubTask 7.5: 编写 PHP 测试验证各场景输出格式与往返
 
-- [ ] Task 8: 异常处理与错误传播
-  - [ ] SubTask 8.1: 定义 `Xhsm\Exception` 异常类（错误码 + 消息字段）
-  - [ ] SubTask 8.2: 将 Rust 层 `Result::Err` 统一映射为 `Xhsm\Exception` 抛出
-  - [ ] SubTask 8.3: 编写 PHP 测试验证异常码与可读消息
+- [x] Task 8: 异常处理与错误传播
+  - [x] SubTask 8.1: 定义 `Xhsm\Exception` 异常类（错误码 + 消息字段）
+  - [x] SubTask 8.2: 将 Rust 层 `Result::Err` 统一映射为 `Xhsm\Exception` 抛出
+  - [x] SubTask 8.3: 编写 PHP 测试验证异常码与可读消息
 
 - [ ] Task 9: 不依赖 OpenSSL 验证
   - [ ] SubTask 9.1: 审查 Cargo 依赖树（`cargo tree`），确认无 libssl/libcrypto 传递链接

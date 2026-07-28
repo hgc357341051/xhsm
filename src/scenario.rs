@@ -23,7 +23,7 @@
 //   调用 smcrypto / sm3 crate，与 signature.rs 的做法一致
 // - DER↔RAW 转换、hex/base64 输出编解码、公钥 04 前缀处理复用 crate::sign_util
 
-use crate::exception::xhsm_exception;
+use crate::exception::{xhsm_exception_code, Exception};
 use crate::sign_util::{
     decode_output, der_to_raw, encode_output, raw_to_der, strip_04_prefix,
 };
@@ -31,6 +31,11 @@ use ext_php_rs::exception::PhpException;
 use ext_php_rs::prelude::*;
 use sm3::Sm3 as Sm3Hasher;
 use smcrypto::sm2;
+
+// 错误码常量：从 Exception 类复用，供本模块各错误路径统一引用。
+const ERR_INVALID_FORMAT: i32 = Exception::ERR_INVALID_FORMAT;
+const ERR_INVALID_PARAM: i32 = Exception::ERR_INVALID_PARAM;
+const ERR_DECODE: i32 = Exception::ERR_DECODE;
 
 // ============================== 场景配置 ==============================
 
@@ -93,13 +98,14 @@ fn scenario_sign(
     let der_sig = sign_ctx.sign(data);
     let sig_bytes = match cfg.encoding.to_uppercase().as_str() {
         "DER" => der_sig,
-        "RAW" => der_to_raw(&der_sig)
-            .map_err(|e| xhsm_exception(format!("DER 转 RAW 签名失败: {}", e)))?,
+        "RAW" => der_to_raw(&der_sig).map_err(|e| {
+            xhsm_exception_code(ERR_DECODE, format!("DER 转 RAW 签名失败: {}", e))
+        })?,
         _ => {
-            return Err(xhsm_exception(format!(
-                "不支持的签名编码: {}（支持 DER/RAW）",
-                cfg.encoding
-            )))
+            return Err(xhsm_exception_code(
+                ERR_INVALID_PARAM,
+                format!("不支持的签名编码: {}（支持 DER/RAW）", cfg.encoding),
+            ))
         }
     };
     encode_output(&sig_bytes, cfg.output)
@@ -125,15 +131,16 @@ fn scenario_verify(
     let result = match cfg.encoding.to_uppercase().as_str() {
         "DER" => verify_ctx.verify(data, &sig_bytes),
         "RAW" => {
-            let der_sig = raw_to_der(&sig_bytes)
-                .map_err(|e| xhsm_exception(format!("RAW 转 DER 签名失败: {}", e)))?;
+            let der_sig = raw_to_der(&sig_bytes).map_err(|e| {
+                xhsm_exception_code(ERR_DECODE, format!("RAW 转 DER 签名失败: {}", e))
+            })?;
             verify_ctx.verify(data, &der_sig)
         }
         _ => {
-            return Err(xhsm_exception(format!(
-                "不支持的签名编码: {}（支持 DER/RAW）",
-                cfg.encoding
-            )))
+            return Err(xhsm_exception_code(
+                ERR_INVALID_PARAM,
+                format!("不支持的签名编码: {}（支持 DER/RAW）", cfg.encoding),
+            ))
         }
     };
     Ok(result)
@@ -157,13 +164,18 @@ fn scenario_encrypt(public_key: &str, data: &[u8]) -> Result<String, PhpExceptio
 ///
 /// 返回：还原后的原始字符串（UTF-8 字节）
 fn scenario_decrypt(private_key: &str, data: &str) -> Result<String, PhpException> {
-    let data_bytes = hex::decode(data)
-        .map_err(|e| xhsm_exception(format!("密文 hex 解码失败: {}", e)))?;
+    let data_bytes = hex::decode(data).map_err(|e| {
+        xhsm_exception_code(
+            ERR_INVALID_FORMAT,
+            format!("密文 hex 解码失败: {}", e),
+        )
+    })?;
     let dec_ctx = sm2::Decrypt::new(private_key);
     let plaintext = dec_ctx.decrypt(&data_bytes);
     // 将明文字节还原为字符串
-    String::from_utf8(plaintext)
-        .map_err(|e| xhsm_exception(format!("明文 UTF-8 解码失败: {}", e)))
+    String::from_utf8(plaintext).map_err(|e| {
+        xhsm_exception_code(ERR_DECODE, format!("明文 UTF-8 解码失败: {}", e))
+    })
 }
 
 /// SM3 摘要，返回 64 字符 hex 字符串。

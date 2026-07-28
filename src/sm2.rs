@@ -14,10 +14,15 @@
 // - "DER" 模式：直接使用 smcrypto 的 DER 输出
 // - "RAW" 模式：将 DER 转换为 r||s 原始拼接（各 32 字节，共 64 字节）
 
-use crate::exception::xhsm_exception;
+use crate::exception::{xhsm_exception_code, Exception};
 use ext_php_rs::exception::PhpException;
 use ext_php_rs::prelude::*;
 use smcrypto::sm2;
+
+// 错误码常量：从 Exception 类复用，供本模块各错误路径统一引用。
+const ERR_INVALID_FORMAT: i32 = Exception::ERR_INVALID_FORMAT;
+const ERR_INVALID_PARAM: i32 = Exception::ERR_INVALID_PARAM;
+const ERR_DECODE: i32 = Exception::ERR_DECODE;
 
 /// SM2 非对称加密算法封装类。
 ///
@@ -66,7 +71,12 @@ impl Sm2 {
             "C1C3C2" => enc_ctx.encrypt(&data_bytes),
             "C1C2C3" => enc_ctx.encrypt_c1c2c3(&data_bytes),
             "ASN1" => enc_ctx.encrypt_asna1(&data_bytes),
-            _ => return Err(xhsm_exception(format!("不支持的加密模式: {}", mode))),
+            _ => {
+                return Err(xhsm_exception_code(
+                    ERR_INVALID_PARAM,
+                    format!("不支持的加密模式: {}", mode),
+                ))
+            }
         };
         Ok(hex::encode(&ciphertext))
     }
@@ -92,7 +102,12 @@ impl Sm2 {
             "C1C3C2" => dec_ctx.decrypt(&data_bytes),
             "C1C2C3" => dec_ctx.decrypt_c1c2c3(&data_bytes),
             "ASN1" => dec_ctx.decrypt_asna1(&data_bytes),
-            _ => return Err(xhsm_exception(format!("不支持的解密模式: {}", mode))),
+            _ => {
+                return Err(xhsm_exception_code(
+                    ERR_INVALID_PARAM,
+                    format!("不支持的解密模式: {}", mode),
+                ))
+            }
         };
         Ok(hex::encode(&plaintext))
     }
@@ -119,11 +134,17 @@ impl Sm2 {
         match format.to_uppercase().as_str() {
             "DER" => Ok(hex::encode(&der_sig)),
             "RAW" => {
-                let raw_sig = der_to_raw(&der_sig)
-                    .map_err(|e| xhsm_exception(format!("DER 转 RAW 签名失败: {}", e)))?;
+                let raw_sig = der_to_raw(&der_sig).map_err(|e| {
+                    xhsm_exception_code(ERR_DECODE, format!("DER 转 RAW 签名失败: {}", e))
+                })?;
                 Ok(hex::encode(&raw_sig))
             }
-            _ => return Err(xhsm_exception(format!("不支持的签名格式: {}", format))),
+            _ => {
+                return Err(xhsm_exception_code(
+                    ERR_INVALID_PARAM,
+                    format!("不支持的签名格式: {}", format),
+                ))
+            }
         }
     }
 
@@ -151,11 +172,17 @@ impl Sm2 {
         let result = match format.to_uppercase().as_str() {
             "DER" => verify_ctx.verify(&data_bytes, &sig_bytes),
             "RAW" => {
-                let der_sig = raw_to_der(&sig_bytes)
-                    .map_err(|e| xhsm_exception(format!("RAW 转 DER 签名失败: {}", e)))?;
+                let der_sig = raw_to_der(&sig_bytes).map_err(|e| {
+                    xhsm_exception_code(ERR_DECODE, format!("RAW 转 DER 签名失败: {}", e))
+                })?;
                 verify_ctx.verify(&data_bytes, &der_sig)
             }
-            _ => return Err(xhsm_exception(format!("不支持的签名格式: {}", format))),
+            _ => {
+                return Err(xhsm_exception_code(
+                    ERR_INVALID_PARAM,
+                    format!("不支持的签名格式: {}", format),
+                ))
+            }
         };
         Ok(result)
     }
@@ -297,7 +324,12 @@ fn read_der_length(data: &[u8], pos: &mut usize) -> Result<u8, &'static str> {
     Ok(len_byte)
 }
 
-/// hex 解码辅助函数，失败时返回 Xhsm\Exception 异常。
+/// hex 解码辅助函数，失败时返回 Xhsm\Exception 异常（错误码 ERR_INVALID_FORMAT）。
 fn hex_decode_or_err(hex_str: &str, name: &str) -> Result<Vec<u8>, PhpException> {
-    hex::decode(hex_str).map_err(|e| xhsm_exception(format!("{} hex 解码失败: {}", name, e)))
+    hex::decode(hex_str).map_err(|e| {
+        xhsm_exception_code(
+            ERR_INVALID_FORMAT,
+            format!("{} hex 解码失败: {}", name, e),
+        )
+    })
 }

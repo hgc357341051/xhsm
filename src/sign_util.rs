@@ -9,9 +9,14 @@
 // - encode_output / decode_output：签名字节的 hex/base64 编解码
 // - strip_04_prefix：去除公钥的 "04" 非压缩前缀
 
-use crate::exception::xhsm_exception;
+use crate::exception::{xhsm_exception_code, Exception};
 use base64::Engine as _;
 use ext_php_rs::exception::PhpException;
+
+// 错误码常量：从 Exception 类复用，供本模块各错误路径统一引用。
+const ERR_INVALID_FORMAT: i32 = Exception::ERR_INVALID_FORMAT;
+const ERR_INVALID_PARAM: i32 = Exception::ERR_INVALID_PARAM;
+const ERR_DECODE: i32 = Exception::ERR_DECODE;
 
 /// 将 ASN.1 DER 编码的 SM2 签名转换为 RAW 格式（r || s，各 32 字节）。
 ///
@@ -138,33 +143,40 @@ fn read_der_length(data: &[u8], pos: &mut usize) -> Result<u8, &'static str> {
 
 /// 按输出编码格式编码签名字节为字符串。
 ///
-/// 支持的 output：`"hex"` / `"base64"`。
+/// 支持的 output：`"hex"` / `"base64"`。不支持的 output 抛 ERR_INVALID_PARAM。
 pub fn encode_output(sig: &[u8], output: &str) -> Result<String, PhpException> {
     match output.to_lowercase().as_str() {
         "hex" => Ok(hex::encode(sig)),
         "base64" => Ok(base64::engine::general_purpose::STANDARD.encode(sig)),
-        _ => Err(xhsm_exception(format!(
-            "不支持的输出编码: {}（支持 hex/base64）",
-            output
-        ))),
+        _ => Err(xhsm_exception_code(
+            ERR_INVALID_PARAM,
+            format!("不支持的输出编码: {}（支持 hex/base64）", output),
+        )),
     }
 }
 
 /// 按输出编码格式解码签名串为字节。
 ///
-/// 支持的 output：`"hex"` / `"base64"`。
+/// 支持的 output：`"hex"` / `"base64"`。hex 解码失败 → ERR_INVALID_FORMAT；
+/// base64 解码失败 → ERR_DECODE；不支持的 output → ERR_INVALID_PARAM。
 pub fn decode_output(sig: &str, output: &str) -> Result<Vec<u8>, PhpException> {
     match output.to_lowercase().as_str() {
-        "hex" => {
-            hex::decode(sig).map_err(|e| xhsm_exception(format!("签名 hex 解码失败: {}", e)))
-        }
-        "base64" => base64::engine::general_purpose::STANDARD
-            .decode(sig)
-            .map_err(|e| xhsm_exception(format!("签名 base64 解码失败: {}", e))),
-        _ => Err(xhsm_exception(format!(
-            "不支持的输出编码: {}（支持 hex/base64）",
-            output
-        ))),
+        "hex" => hex::decode(sig).map_err(|e| {
+            xhsm_exception_code(
+                ERR_INVALID_FORMAT,
+                format!("签名 hex 解码失败: {}", e),
+            )
+        }),
+        "base64" => base64::engine::general_purpose::STANDARD.decode(sig).map_err(|e| {
+            xhsm_exception_code(
+                ERR_DECODE,
+                format!("签名 base64 解码失败: {}", e),
+            )
+        }),
+        _ => Err(xhsm_exception_code(
+            ERR_INVALID_PARAM,
+            format!("不支持的输出编码: {}（支持 hex/base64）", output),
+        )),
     }
 }
 

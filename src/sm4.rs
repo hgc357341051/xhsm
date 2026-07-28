@@ -13,12 +13,17 @@
 // - aad：GCM 附加认证数据（其他模式忽略）
 // - 返回：密文（GCM 模式为密文+16字节认证 Tag）
 
-use crate::exception::xhsm_exception;
+use crate::exception::{xhsm_exception, xhsm_exception_code, Exception};
 use cipher::generic_array::GenericArray;
 use ext_php_rs::exception::PhpException;
 use ext_php_rs::prelude::*;
 // 重命名 RustCrypto 的 Sm4 块密码为 Sm4Cipher，避免与下方 Xhsm\Sm4 类冲突
 use sm4::Sm4 as Sm4Cipher;
+
+// 错误码常量：从 Exception 类复用，供本模块各错误路径统一引用。
+const ERR_INVALID_FORMAT: i32 = Exception::ERR_INVALID_FORMAT;
+const ERR_INVALID_PARAM: i32 = Exception::ERR_INVALID_PARAM;
+const ERR_DECODE: i32 = Exception::ERR_DECODE;
 
 // 各工作模式类型别名
 type Sm4EcbEnc = ecb::Encryptor<Sm4Cipher>;
@@ -99,7 +104,12 @@ impl Sm4 {
                 buf
             }
             "GCM" => gcm_encrypt(&key_bytes, &iv_bytes, &data_bytes, &aad_bytes)?,
-            _ => return Err(xhsm_exception(format!("不支持的工作模式: {}", mode))),
+            _ => {
+                return Err(xhsm_exception_code(
+                    ERR_INVALID_PARAM,
+                    format!("不支持的工作模式: {}", mode),
+                ))
+            }
         };
 
         Ok(hex::encode(&ciphertext))
@@ -163,7 +173,12 @@ impl Sm4 {
                 buf
             }
             "GCM" => gcm_decrypt(&key_bytes, &iv_bytes, &data_bytes, &aad_bytes)?,
-            _ => return Err(xhsm_exception(format!("不支持的工作模式: {}", mode))),
+            _ => {
+                return Err(xhsm_exception_code(
+                    ERR_INVALID_PARAM,
+                    format!("不支持的工作模式: {}", mode),
+                ))
+            }
         };
 
         Ok(hex::encode(&plaintext))
@@ -303,7 +318,10 @@ fn gcm_decrypt(
 
     // 5. 常量时间比较 Tag
     if !constant_time_eq(&expected_tag, received_tag) {
-        return Err(xhsm_exception("GCM 解密失败（Tag 校验失败或数据错误）"));
+        return Err(xhsm_exception_code(
+            ERR_DECODE,
+            "GCM 解密失败（Tag 校验失败或数据错误）",
+        ));
     }
 
     // 6. Tag 校验通过，CTR 解密
@@ -341,7 +359,12 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     diff == 0
 }
 
-/// hex 解码辅助函数，失败时返回 Xhsm\Exception 异常。
+/// hex 解码辅助函数，失败时返回 Xhsm\Exception 异常（错误码 ERR_INVALID_FORMAT）。
 fn hex_decode_or_err(hex_str: &str, name: &str) -> Result<Vec<u8>, PhpException> {
-    hex::decode(hex_str).map_err(|e| xhsm_exception(format!("{} hex 解码失败: {}", name, e)))
+    hex::decode(hex_str).map_err(|e| {
+        xhsm_exception_code(
+            ERR_INVALID_FORMAT,
+            format!("{} hex 解码失败: {}", name, e),
+        )
+    })
 }

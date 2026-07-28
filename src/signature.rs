@@ -19,7 +19,7 @@
 // - s3：algorithm=SM2, encoding=RAW,  output=hex,    description="原始 r||s + hex 编码"
 // - s4：algorithm=SM2, encoding=DER,  output=base64, description="ASN.1 DER + base64 编码"
 
-use crate::exception::xhsm_exception;
+use crate::exception::{xhsm_exception_code, Exception};
 use crate::sign_util::{
     decode_output, der_to_raw, encode_output, raw_to_der, strip_04_prefix,
 };
@@ -28,6 +28,12 @@ use ext_php_rs::prelude::*;
 use smcrypto::sm2;
 use std::collections::HashMap;
 use std::sync::{OnceLock, RwLock};
+
+// 错误码常量：从 Exception 类复用，供本模块各错误路径统一引用。
+const ERR_INVALID_PARAM: i32 = Exception::ERR_INVALID_PARAM;
+const ERR_UNSUPPORTED: i32 = Exception::ERR_UNSUPPORTED;
+const ERR_INTERNAL: i32 = Exception::ERR_INTERNAL;
+const ERR_DECODE: i32 = Exception::ERR_DECODE;
 
 /// 默认用户 ID（smcrypto 内部固定值，作为保留字段默认值）
 const DEFAULT_USER_ID: &str = "1234567812345678";
@@ -158,7 +164,7 @@ impl Signature {
     pub fn register(version: String, config: HashMap<String, String>) -> Result<(), PhpException> {
         // 校验版本名非空
         if version.trim().is_empty() {
-            return Err(xhsm_exception("版本名不能为空"));
+            return Err(xhsm_exception_code(ERR_INVALID_PARAM, "版本名不能为空"));
         }
 
         let mut ver = SigVersion::new("");
@@ -168,10 +174,10 @@ impl Signature {
             .map(|s| s.trim().to_string())
             .unwrap_or_else(|| "SM2".to_string());
         if algorithm.to_uppercase() != "SM2" {
-            return Err(xhsm_exception(format!(
-                "不支持的算法: {}（当前仅支持 SM2）",
-                algorithm
-            )));
+            return Err(xhsm_exception_code(
+                ERR_UNSUPPORTED,
+                format!("不支持的算法: {}（当前仅支持 SM2）", algorithm),
+            ));
         }
         ver.algorithm = "SM2".to_string();
 
@@ -181,10 +187,10 @@ impl Signature {
             .map(|s| s.trim().to_uppercase())
             .unwrap_or_else(|| "DER".to_string());
         if encoding != "DER" && encoding != "RAW" {
-            return Err(xhsm_exception(format!(
-                "不支持的签名编码: {}（支持 DER/RAW）",
-                encoding
-            )));
+            return Err(xhsm_exception_code(
+                ERR_INVALID_PARAM,
+                format!("不支持的签名编码: {}（支持 DER/RAW）", encoding),
+            ));
         }
         ver.encoding = encoding;
 
@@ -194,10 +200,10 @@ impl Signature {
             .map(|s| s.trim().to_lowercase())
             .unwrap_or_else(|| "hex".to_string());
         if output != "hex" && output != "base64" {
-            return Err(xhsm_exception(format!(
-                "不支持的输出编码: {}（支持 hex/base64）",
-                output
-            )));
+            return Err(xhsm_exception_code(
+                ERR_INVALID_PARAM,
+                format!("不支持的输出编码: {}（支持 hex/base64）", output),
+            ));
         }
         ver.output = output;
 
@@ -216,9 +222,12 @@ impl Signature {
         // 写入注册表，重名则抛异常
         let mut map = registry()
             .write()
-            .map_err(|e| xhsm_exception(format!("注册表锁获取失败: {}", e)))?;
+            .map_err(|e| xhsm_exception_code(ERR_INTERNAL, format!("注册表锁获取失败: {}", e)))?;
         if map.contains_key(&version) {
-            return Err(xhsm_exception(format!("版本已存在: {}", version)));
+            return Err(xhsm_exception_code(
+                ERR_INVALID_PARAM,
+                format!("版本已存在: {}", version),
+            ));
         }
         map.insert(version, ver);
         Ok(())
@@ -230,7 +239,7 @@ impl Signature {
     pub fn versions() -> Result<Vec<String>, PhpException> {
         let map = registry()
             .read()
-            .map_err(|e| xhsm_exception(format!("注册表锁获取失败: {}", e)))?;
+            .map_err(|e| xhsm_exception_code(ERR_INTERNAL, format!("注册表锁获取失败: {}", e)))?;
         let mut names: Vec<String> = map.keys().cloned().collect();
         names.sort();
         Ok(names)
@@ -260,10 +269,15 @@ impl Signature {
 fn get_version(version: &str) -> Result<SigVersion, PhpException> {
     let map = registry()
         .read()
-        .map_err(|e| xhsm_exception(format!("注册表锁获取失败: {}", e)))?;
+        .map_err(|e| xhsm_exception_code(ERR_INTERNAL, format!("注册表锁获取失败: {}", e)))?;
     map.get(version)
         .cloned()
-        .ok_or_else(|| xhsm_exception(format!("未知的签名版本: {}", version)))
+        .ok_or_else(|| {
+            xhsm_exception_code(
+                ERR_INVALID_PARAM,
+                format!("未知的签名版本: {}", version),
+            )
+        })
 }
 
 /// SM2 签名内部实现（直接调用 smcrypto，与 Sm2 类独立）。
@@ -284,12 +298,13 @@ fn sm2_sign_internal(
     let der_sig = sign_ctx.sign(data);
     match encoding.to_uppercase().as_str() {
         "DER" => Ok(der_sig),
-        "RAW" => der_to_raw(&der_sig)
-            .map_err(|e| xhsm_exception(format!("DER 转 RAW 签名失败: {}", e))),
-        _ => Err(xhsm_exception(format!(
-            "不支持的签名编码: {}（支持 DER/RAW）",
-            encoding
-        ))),
+        "RAW" => der_to_raw(&der_sig).map_err(|e| {
+            xhsm_exception_code(ERR_DECODE, format!("DER 转 RAW 签名失败: {}", e))
+        }),
+        _ => Err(xhsm_exception_code(
+            ERR_INVALID_PARAM,
+            format!("不支持的签名编码: {}（支持 DER/RAW）", encoding),
+        )),
     }
 }
 
@@ -311,13 +326,14 @@ fn sm2_verify_internal(
     match encoding.to_uppercase().as_str() {
         "DER" => Ok(verify_ctx.verify(data, sig)),
         "RAW" => {
-            let der_sig = raw_to_der(sig)
-                .map_err(|e| xhsm_exception(format!("RAW 转 DER 签名失败: {}", e)))?;
+            let der_sig = raw_to_der(sig).map_err(|e| {
+                xhsm_exception_code(ERR_DECODE, format!("RAW 转 DER 签名失败: {}", e))
+            })?;
             Ok(verify_ctx.verify(data, &der_sig))
         }
-        _ => Err(xhsm_exception(format!(
-            "不支持的签名编码: {}（支持 DER/RAW）",
-            encoding
-        ))),
+        _ => Err(xhsm_exception_code(
+            ERR_INVALID_PARAM,
+            format!("不支持的签名编码: {}（支持 DER/RAW）", encoding),
+        )),
     }
 }
