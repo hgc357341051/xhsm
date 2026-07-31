@@ -1,3 +1,5 @@
+#![cfg_attr(windows, feature(abi_vectorcall))]
+
 // xhsm：基于 Rust + ext-php-rs 0.15 构建的国密算法 PHP 扩展
 //
 // 当前实现：

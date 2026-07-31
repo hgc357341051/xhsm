@@ -1,0 +1,9 @@
+# Cargo 构建配置
+#
+# Windows (x86_64-pc-windows-msvc) target 使用 rust-lld 链接器，
+# 避免 MSVC link.exe 在 ext-php-rs build script 中触发
+# STATUS_STACK_BUFFER_OVERRUN (0xc0000409) 崩溃。
+#
+# 仅对 Windows target 生效，Linux / macOS 不受影响。
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
