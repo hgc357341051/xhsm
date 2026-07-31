@@ -221,8 +221,8 @@ fn gcm_encrypt(
     for chunk in ciphertext.chunks_mut(16) {
         inc32(&mut counter);
         let mut keystream = counter;
-        let mut block = GenericArray::from_mut_slice(&mut keystream);
-        cipher.encrypt_block(&mut block);
+        let block = GenericArray::from_mut_slice(&mut keystream);
+        cipher.encrypt_block(block);
         for (b, k) in chunk.iter_mut().zip(keystream.iter()) {
             *b ^= *k;
         }
@@ -242,8 +242,8 @@ fn gcm_encrypt(
     // 5. T = E_K(J0) XOR GHASH
     let mut j0_enc = j0;
     {
-        let mut block = GenericArray::from_mut_slice(&mut j0_enc);
-        cipher.encrypt_block(&mut block);
+        let block = GenericArray::from_mut_slice(&mut j0_enc);
+        cipher.encrypt_block(block);
     }
     let mut tag = [0u8; 16];
     tag.copy_from_slice(ghash_tag.as_slice());
@@ -259,12 +259,7 @@ fn gcm_encrypt(
 /// GCM 解密（手动实现：CTR + GHASH Tag 校验）。
 ///
 /// 输入 data 为 密文 || 16字节 Tag，校验 Tag 通过后返回明文。
-fn gcm_decrypt(
-    key: &[u8],
-    iv: &[u8],
-    data: &[u8],
-    aad: &[u8],
-) -> Result<Vec<u8>, PhpException> {
+fn gcm_decrypt(key: &[u8], iv: &[u8], data: &[u8], aad: &[u8]) -> Result<Vec<u8>, PhpException> {
     use cipher::{BlockEncrypt, KeyInit};
     use ghash::universal_hash::UniversalHash;
     use ghash::GHash;
@@ -307,8 +302,8 @@ fn gcm_decrypt(
     // 4. T = E_K(J0) XOR GHASH
     let mut j0_enc = j0;
     {
-        let mut block = GenericArray::from_mut_slice(&mut j0_enc);
-        cipher.encrypt_block(&mut block);
+        let block = GenericArray::from_mut_slice(&mut j0_enc);
+        cipher.encrypt_block(block);
     }
     let mut expected_tag = [0u8; 16];
     expected_tag.copy_from_slice(ghash_tag.as_slice());
@@ -330,8 +325,8 @@ fn gcm_decrypt(
     for chunk in plaintext.chunks_mut(16) {
         inc32(&mut counter);
         let mut keystream = counter;
-        let mut block = GenericArray::from_mut_slice(&mut keystream);
-        cipher.encrypt_block(&mut block);
+        let block = GenericArray::from_mut_slice(&mut keystream);
+        cipher.encrypt_block(block);
         for (b, k) in chunk.iter_mut().zip(keystream.iter()) {
             *b ^= *k;
         }
@@ -362,9 +357,6 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
 /// hex 解码辅助函数，失败时返回 Xhsm\Exception 异常（错误码 ERR_INVALID_FORMAT）。
 fn hex_decode_or_err(hex_str: &str, name: &str) -> Result<Vec<u8>, PhpException> {
     hex::decode(hex_str).map_err(|e| {
-        xhsm_exception_code(
-            ERR_INVALID_FORMAT,
-            format!("{} hex 解码失败: {}", name, e),
-        )
+        xhsm_exception_code(ERR_INVALID_FORMAT, format!("{} hex 解码失败: {}", name, e))
     })
 }

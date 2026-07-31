@@ -162,17 +162,11 @@ pub fn encode_output(sig: &[u8], output: &str) -> Result<String, PhpException> {
 pub fn decode_output(sig: &str, output: &str) -> Result<Vec<u8>, PhpException> {
     match output.to_lowercase().as_str() {
         "hex" => hex::decode(sig).map_err(|e| {
-            xhsm_exception_code(
-                ERR_INVALID_FORMAT,
-                format!("签名 hex 解码失败: {}", e),
-            )
+            xhsm_exception_code(ERR_INVALID_FORMAT, format!("签名 hex 解码失败: {}", e))
         }),
-        "base64" => base64::engine::general_purpose::STANDARD.decode(sig).map_err(|e| {
-            xhsm_exception_code(
-                ERR_DECODE,
-                format!("签名 base64 解码失败: {}", e),
-            )
-        }),
+        "base64" => base64::engine::general_purpose::STANDARD
+            .decode(sig)
+            .map_err(|e| xhsm_exception_code(ERR_DECODE, format!("签名 base64 解码失败: {}", e))),
         _ => Err(xhsm_exception_code(
             ERR_INVALID_PARAM,
             format!("不支持的输出编码: {}（支持 hex/base64）", output),

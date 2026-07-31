@@ -16,8 +16,8 @@ use ext_php_rs::prelude::*;
 
 mod exception;
 mod scenario;
-mod signature;
 mod sign_util;
+mod signature;
 mod sm2;
 mod sm3;
 mod sm4;

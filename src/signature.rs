@@ -20,9 +20,7 @@
 // - s4：algorithm=SM2, encoding=DER,  output=base64, description="ASN.1 DER + base64 编码"
 
 use crate::exception::{xhsm_exception_code, Exception};
-use crate::sign_util::{
-    decode_output, der_to_raw, encode_output, raw_to_der, strip_04_prefix,
-};
+use crate::sign_util::{decode_output, der_to_raw, encode_output, raw_to_der, strip_04_prefix};
 use ext_php_rs::exception::PhpException;
 use ext_php_rs::prelude::*;
 use smcrypto::sm2;
@@ -270,14 +268,9 @@ fn get_version(version: &str) -> Result<SigVersion, PhpException> {
     let map = registry()
         .read()
         .map_err(|e| xhsm_exception_code(ERR_INTERNAL, format!("注册表锁获取失败: {}", e)))?;
-    map.get(version)
-        .cloned()
-        .ok_or_else(|| {
-            xhsm_exception_code(
-                ERR_INVALID_PARAM,
-                format!("未知的签名版本: {}", version),
-            )
-        })
+    map.get(version).cloned().ok_or_else(|| {
+        xhsm_exception_code(ERR_INVALID_PARAM, format!("未知的签名版本: {}", version))
+    })
 }
 
 /// SM2 签名内部实现（直接调用 smcrypto，与 Sm2 类独立）。
@@ -298,9 +291,8 @@ fn sm2_sign_internal(
     let der_sig = sign_ctx.sign(data);
     match encoding.to_uppercase().as_str() {
         "DER" => Ok(der_sig),
-        "RAW" => der_to_raw(&der_sig).map_err(|e| {
-            xhsm_exception_code(ERR_DECODE, format!("DER 转 RAW 签名失败: {}", e))
-        }),
+        "RAW" => der_to_raw(&der_sig)
+            .map_err(|e| xhsm_exception_code(ERR_DECODE, format!("DER 转 RAW 签名失败: {}", e))),
         _ => Err(xhsm_exception_code(
             ERR_INVALID_PARAM,
             format!("不支持的签名编码: {}（支持 DER/RAW）", encoding),

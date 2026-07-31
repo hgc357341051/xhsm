@@ -80,10 +80,22 @@ impl Sm9 {
         let sig_mpk_pem = read_pem(sig_mpk.path())?;
 
         Ok(vec![
-            ("master_enc_private_key".to_string(), pem_to_hex(&enc_msk_pem)),
-            ("master_enc_public_key".to_string(), pem_to_hex(&enc_mpk_pem)),
-            ("master_sig_private_key".to_string(), pem_to_hex(&sig_msk_pem)),
-            ("master_sig_public_key".to_string(), pem_to_hex(&sig_mpk_pem)),
+            (
+                "master_enc_private_key".to_string(),
+                pem_to_hex(&enc_msk_pem),
+            ),
+            (
+                "master_enc_public_key".to_string(),
+                pem_to_hex(&enc_mpk_pem),
+            ),
+            (
+                "master_sig_private_key".to_string(),
+                pem_to_hex(&sig_msk_pem),
+            ),
+            (
+                "master_sig_public_key".to_string(),
+                pem_to_hex(&sig_mpk_pem),
+            ),
         ])
     }
 
@@ -111,17 +123,18 @@ impl Sm9 {
         // sm9 crate 的密钥抽取 API 为文件接口，需写入临时文件中转
         let msk_file = TempFile::new("msk");
         std::fs::write(msk_file.path(), &msk_pem).map_err(|e| {
-            xhsm_exception_code(
-                ERR_INTERNAL,
-                format!("写入临时主私钥文件失败: {}", e),
-            )
+            xhsm_exception_code(ERR_INTERNAL, format!("写入临时主私钥文件失败: {}", e))
         })?;
 
         match key_type.to_lowercase().as_str() {
             "enc" => {
                 let upk_file = TempFile::new("upk");
                 run_or_panic("SM9 加密用户私钥抽取失败", || {
-                    ::sm9::Sm9::generate_user_private_key_to_pem(msk_file.path(), id_bytes, upk_file.path());
+                    ::sm9::Sm9::generate_user_private_key_to_pem(
+                        msk_file.path(),
+                        id_bytes,
+                        upk_file.path(),
+                    );
                 })?;
                 let upk_pem = read_pem(upk_file.path())?;
                 Ok(pem_to_hex(&upk_pem))
@@ -144,7 +157,11 @@ impl Sm9 {
                 let uspk_pem = read_pem(uspk_file.path())?;
                 let mspk_pem = read_pem(mspk_file.path())?;
                 // 捆绑格式：hex(uspk_pem):hex(mspk_pem)
-                Ok(format!("{}:{}", pem_to_hex(&uspk_pem), pem_to_hex(&mspk_pem)))
+                Ok(format!(
+                    "{}:{}",
+                    pem_to_hex(&uspk_pem),
+                    pem_to_hex(&mspk_pem)
+                ))
             }
             _ => Err(xhsm_exception_code(
                 ERR_INVALID_PARAM,
@@ -196,15 +213,11 @@ impl Sm9 {
         let data_bytes = hex_decode_or_err(&data, "密文")?;
         let id_bytes = id.as_bytes();
 
-        let plaintext = run_or_panic("SM9 解密失败：用户私钥无效或内部错误", || {
-            ::sm9::Sm9::decrypt2(&upk_pem, id_bytes, data_bytes)
-        })?
-        .ok_or_else(|| {
-            xhsm_exception_code(
-                ERR_DECODE,
-                "SM9 解密失败：密文无效或 MAC 校验失败",
-            )
-        })?;
+        let plaintext = run_or_panic(
+            "SM9 解密失败：用户私钥无效或内部错误",
+            || ::sm9::Sm9::decrypt2(&upk_pem, id_bytes, data_bytes),
+        )?
+        .ok_or_else(|| xhsm_exception_code(ERR_DECODE, "SM9 解密失败：密文无效或 MAC 校验失败"))?;
 
         String::from_utf8(plaintext).map_err(|e| {
             xhsm_exception_code(
@@ -268,9 +281,8 @@ impl Sm9 {
         let sig_bytes = hex_decode_or_err(&signature, "签名")?;
         let id_bytes = id.as_bytes();
 
-        let sig = ::sm9::Signature::from_slice(&sig_bytes).map_err(|e| {
-            xhsm_exception_code(ERR_DECODE, format!("SM9 签名解析失败: {}", e))
-        })?;
+        let sig = ::sm9::Signature::from_slice(&sig_bytes)
+            .map_err(|e| xhsm_exception_code(ERR_DECODE, format!("SM9 签名解析失败: {}", e)))?;
 
         let result = run_or_panic("SM9 验签失败：主公钥无效或内部错误", || {
             ::sm9::Sm9::verify2(&mspk_pem, id_bytes, &data_bytes, &sig)
@@ -317,12 +329,8 @@ where
 
 /// 读取文件内容为 PEM 字符串。
 fn read_pem(path: &std::path::Path) -> Result<String, PhpException> {
-    std::fs::read_to_string(path).map_err(|e| {
-        xhsm_exception_code(
-            ERR_INTERNAL,
-            format!("读取临时密钥文件失败: {}", e),
-        )
-    })
+    std::fs::read_to_string(path)
+        .map_err(|e| xhsm_exception_code(ERR_INTERNAL, format!("读取临时密钥文件失败: {}", e)))
 }
 
 /// 将 PEM 字符串编码为 hex（用于 PHP 层密钥表示）。
@@ -335,10 +343,7 @@ fn pem_to_hex(pem: &str) -> String {
 /// hex 解码失败 → ERR_INVALID_FORMAT；UTF-8 还原失败 → ERR_DECODE。
 fn hex_to_pem(hex_str: &str) -> Result<String, PhpException> {
     let bytes = hex::decode(hex_str).map_err(|e| {
-        xhsm_exception_code(
-            ERR_INVALID_FORMAT,
-            format!("密钥 hex 解码失败: {}", e),
-        )
+        xhsm_exception_code(ERR_INVALID_FORMAT, format!("密钥 hex 解码失败: {}", e))
     })?;
     String::from_utf8(bytes).map_err(|e| {
         xhsm_exception_code(
@@ -379,9 +384,6 @@ fn parse_sig_key(
 /// hex 解码辅助函数，失败时返回 Xhsm\Exception 异常（错误码 ERR_INVALID_FORMAT）。
 fn hex_decode_or_err(hex_str: &str, name: &str) -> Result<Vec<u8>, PhpException> {
     hex::decode(hex_str).map_err(|e| {
-        xhsm_exception_code(
-            ERR_INVALID_FORMAT,
-            format!("{} hex 解码失败: {}", name, e),
-        )
+        xhsm_exception_code(ERR_INVALID_FORMAT, format!("{} hex 解码失败: {}", name, e))
     })
 }

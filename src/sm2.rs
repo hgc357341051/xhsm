@@ -139,12 +139,10 @@ impl Sm2 {
                 })?;
                 Ok(hex::encode(&raw_sig))
             }
-            _ => {
-                return Err(xhsm_exception_code(
-                    ERR_INVALID_PARAM,
-                    format!("不支持的签名格式: {}", format),
-                ))
-            }
+            _ => Err(xhsm_exception_code(
+                ERR_INVALID_PARAM,
+                format!("不支持的签名格式: {}", format),
+            )),
         }
     }
 
@@ -327,9 +325,6 @@ fn read_der_length(data: &[u8], pos: &mut usize) -> Result<u8, &'static str> {
 /// hex 解码辅助函数，失败时返回 Xhsm\Exception 异常（错误码 ERR_INVALID_FORMAT）。
 fn hex_decode_or_err(hex_str: &str, name: &str) -> Result<Vec<u8>, PhpException> {
     hex::decode(hex_str).map_err(|e| {
-        xhsm_exception_code(
-            ERR_INVALID_FORMAT,
-            format!("{} hex 解码失败: {}", name, e),
-        )
+        xhsm_exception_code(ERR_INVALID_FORMAT, format!("{} hex 解码失败: {}", name, e))
     })
 }
