@@ -80,6 +80,20 @@ const MINIPROGRAM_CONFIG: ScenarioConfig = ScenarioConfig {
     description: "小程序平台传输格式（DER + base64）",
 };
 
+/// uniapp 场景：RAW + hex（与 Payment 相同，sm-crypto 默认零转换）。
+const UNIAPP_CONFIG: ScenarioConfig = ScenarioConfig {
+    encoding: "RAW",
+    output: "hex",
+    description: "uniapp 跨端格式（RAW r||s + hex，sm-crypto 默认零转换）",
+};
+
+/// Web 场景：RAW + base64（体积小，适合 Web 端传输）。
+const WEB_CONFIG: ScenarioConfig = ScenarioConfig {
+    encoding: "RAW",
+    output: "base64",
+    description: "Web 端格式（RAW r||s + base64，体积小）",
+};
+
 // ============================== 内部辅助函数 ==============================
 
 /// 按场景配置进行 SM2 签名，返回签名串。
@@ -389,5 +403,97 @@ impl MiniProgram {
     /// 返回小程序场景的业务标准描述。
     pub fn description() -> String {
         MINIPROGRAM_CONFIG.description.to_string()
+    }
+}
+
+/// uniapp 跨端业务场景预设类。
+///
+/// 签名：RAW(r||s) + hex（sm-crypto 默认零转换，与 Payment 一致）
+/// 加密：SM2 C1C3C2 + hex
+#[php_class]
+#[php(name = "Xhsm\\Scenario\\Uniapp")]
+#[derive(Default)]
+pub struct Uniapp;
+
+#[php_impl]
+impl Uniapp {
+    /// 按uniapp场景预配置签名（RAW + hex）。
+    pub fn sign(private_key: String, data: String) -> Result<String, PhpException> {
+        scenario_sign(&private_key, data.as_bytes(), &UNIAPP_CONFIG)
+    }
+
+    /// 按uniapp场景预配置验签，与 sign 严格对称。
+    pub fn verify(
+        public_key: String,
+        data: String,
+        signature: String,
+    ) -> Result<bool, PhpException> {
+        scenario_verify(&public_key, data.as_bytes(), &signature, &UNIAPP_CONFIG)
+    }
+
+    /// SM2 加密（C1C3C2 + hex）。
+    pub fn encrypt(public_key: String, data: String) -> Result<String, PhpException> {
+        scenario_encrypt(&public_key, data.as_bytes())
+    }
+
+    /// SM2 解密（C1C3C2）。
+    pub fn decrypt(private_key: String, data: String) -> Result<String, PhpException> {
+        scenario_decrypt(&private_key, &data)
+    }
+
+    /// SM3 摘要（hex）。
+    pub fn hash(data: String) -> Result<String, PhpException> {
+        Ok(scenario_hash(data.as_bytes()))
+    }
+
+    /// 返回uniapp场景的业务标准描述。
+    pub fn description() -> String {
+        UNIAPP_CONFIG.description.to_string()
+    }
+}
+
+/// Web 端业务场景预设类。
+///
+/// 签名：RAW(r||s) + base64（体积小，适合 Web 端传输）
+/// 加密：SM2 C1C3C2 + hex
+#[php_class]
+#[php(name = "Xhsm\\Scenario\\Web")]
+#[derive(Default)]
+pub struct Web;
+
+#[php_impl]
+impl Web {
+    /// 按Web场景预配置签名（RAW + base64）。
+    pub fn sign(private_key: String, data: String) -> Result<String, PhpException> {
+        scenario_sign(&private_key, data.as_bytes(), &WEB_CONFIG)
+    }
+
+    /// 按Web场景预配置验签，与 sign 严格对称。
+    pub fn verify(
+        public_key: String,
+        data: String,
+        signature: String,
+    ) -> Result<bool, PhpException> {
+        scenario_verify(&public_key, data.as_bytes(), &signature, &WEB_CONFIG)
+    }
+
+    /// SM2 加密（C1C3C2 + hex）。
+    pub fn encrypt(public_key: String, data: String) -> Result<String, PhpException> {
+        scenario_encrypt(&public_key, data.as_bytes())
+    }
+
+    /// SM2 解密（C1C3C2）。
+    pub fn decrypt(private_key: String, data: String) -> Result<String, PhpException> {
+        scenario_decrypt(&private_key, &data)
+    }
+
+    /// SM3 摘要（hex）。
+    pub fn hash(data: String) -> Result<String, PhpException> {
+        Ok(scenario_hash(data.as_bytes()))
+    }
+
+    /// 返回Web场景的业务标准描述。
+    pub fn description() -> String {
+        WEB_CONFIG.description.to_string()
     }
 }

@@ -1,0 +1,13 @@
+{
+    "public_key": "04ee98b8e8e56f22a6561e052d6de0f006adb6a11ca7af999ca406c06346c5e5e8fa18cdc3c5377062a79c57b65e451275c25ac83e0756db120b9eaaef7c38ac57",
+    "private_key": "be208df4af8d52a933d58cc795dcb0ccffc550350cadf3524790250819aa7bc9",
+    "data": "xhsm-verify-test-payload",
+    "der_hex": "3046022100af7db4ae0e2d28e4166907b86a4f0d1a4cb0f390b0325012be8ad965f2b02ae9022100f24f1936a6850c940340daed1a7a9d5b198f36c11e56e0896e4d4e09fd37861f",
+    "raw_hex": "457967c50795b571a523a007df61e3779535619749f114ba2e7668f849f06bd62441c3045c9058d82608683274afa80e9e1e546f4cf36d4947145ad81acd741a",
+    "der_base64": "MEQCIH6gQ/b4G6hOJLqs7A/M0Uq9lO1HhTHYoWl1aQWIJd8+AiBe4I1LWop8fhAOCbP+GwTxZbNgaPTdXwJq1IsARuRyxA==",
+    "raw_base64": "m2g0Y/msgQlQeTBOE0dQpz6Dbh1YbS/hUwNf9Cxk3flVeEYXYlUKknx1i5xheJdOGqjgDipUu96RWFBb4XelUw==",
+    "php_verify_der_hex": true,
+    "php_verify_raw_hex": true,
+    "php_verify_der_base64": true,
+    "php_verify_raw_base64": true
+}

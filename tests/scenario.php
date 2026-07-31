@@ -159,6 +159,76 @@ $ok = Xhsm\Scenario\MiniProgram::verify($pk, 'tampered', $sig_mp);
 assert_true(!$ok, 'MiniProgram 篡改数据验签应失败');
 echo "[OK] MiniProgram 篡改数据验签失败验证通过\n";
 
+// ---------- Uniapp（uniapp 跨端）：RAW + hex ----------
+echo "--- Uniapp（RAW + hex）---\n";
+assert_eq(
+    Xhsm\Scenario\Uniapp::description(),
+    'uniapp 跨端格式（RAW r||s + hex，sm-crypto 默认零转换）',
+    'Uniapp description 应正确'
+);
+
+$sig_uni = Xhsm\Scenario\Uniapp::sign($sk, $data);
+assert_true(strlen($sig_uni) > 0, 'Uniapp 签名应非空');
+// RAW 签名 = r(32) || s(32) = 64 字节 = 128 hex 字符
+assert_eq(strlen($sig_uni), 128, 'Uniapp RAW 签名应为 128 hex 字符（64 字节）');
+assert_true(is_pure_hex($sig_uni), 'Uniapp 签名应为纯 hex');
+$ok = Xhsm\Scenario\Uniapp::verify($pk, $data, $sig_uni);
+assert_true($ok, 'Uniapp 验签应通过');
+echo "[OK] Uniapp sign→verify round-trip 通过，签名: " . $sig_uni . "\n";
+
+$ct_uni = Xhsm\Scenario\Uniapp::encrypt($pk, $plain);
+$pt_uni = Xhsm\Scenario\Uniapp::decrypt($sk, $ct_uni);
+assert_eq($pt_uni, $plain, 'Uniapp 加解密应还原原文');
+echo "[OK] Uniapp encrypt→decrypt round-trip 通过\n";
+
+$h_uni = Xhsm\Scenario\Uniapp::hash($data);
+assert_eq(strlen($h_uni), 64, 'Uniapp hash 应为 64 hex 字符');
+assert_eq($h_uni, $h_fin, 'Uniapp hash 应与其他场景一致');
+echo "[OK] Uniapp hash 一致: " . $h_uni . "\n";
+
+$ok = Xhsm\Scenario\Uniapp::verify($pk, 'tampered', $sig_uni);
+assert_true(!$ok, 'Uniapp 篡改数据验签应失败');
+echo "[OK] Uniapp 篡改数据验签失败验证通过\n";
+
+// Uniapp(RAW+hex) 与 Payment(RAW+hex) 底层格式相同，交叉验签应通过
+$ok_cross_uni = Xhsm\Scenario\Payment::verify($pk, $data, $sig_uni);
+assert_true($ok_cross_uni, 'Uniapp(RAW+hex) 签名应可被 Payment(RAW+hex) 验签通过');
+$ok_cross_uni2 = Xhsm\Scenario\Uniapp::verify($pk, $data, $sig_pay);
+assert_true($ok_cross_uni2, 'Payment(RAW+hex) 签名应可被 Uniapp(RAW+hex) 验签通过');
+echo "[OK] Uniapp 与 Payment 交叉验签通过（同 RAW+hex 配置）\n";
+
+// ---------- Web（Web 端）：RAW + base64 ----------
+echo "--- Web（RAW + base64）---\n";
+assert_eq(
+    Xhsm\Scenario\Web::description(),
+    'Web 端格式（RAW r||s + base64，体积小）',
+    'Web description 应正确'
+);
+
+$sig_web = Xhsm\Scenario\Web::sign($sk, $data);
+assert_true(strlen($sig_web) > 0, 'Web 签名应非空');
+// RAW 签名 base64 编码：解码后应为 64 字节（r||s）
+assert_eq(strlen(base64_decode($sig_web)), 64, 'Web base64 解码后应为 64 字节（RAW r||s）');
+// base64 通常含非 hex 字符（大写字母 / + / = 等），不应为纯 hex
+assert_true(!is_pure_hex($sig_web), 'Web base64 签名应含非 hex 字符');
+$ok = Xhsm\Scenario\Web::verify($pk, $data, $sig_web);
+assert_true($ok, 'Web 验签应通过');
+echo "[OK] Web sign→verify round-trip 通过，签名: " . $sig_web . "\n";
+
+$ct_web = Xhsm\Scenario\Web::encrypt($pk, $plain);
+$pt_web = Xhsm\Scenario\Web::decrypt($sk, $ct_web);
+assert_eq($pt_web, $plain, 'Web 加解密应还原原文');
+echo "[OK] Web encrypt→decrypt round-trip 通过\n";
+
+$h_web = Xhsm\Scenario\Web::hash($data);
+assert_eq(strlen($h_web), 64, 'Web hash 应为 64 hex 字符');
+assert_eq($h_web, $h_fin, 'Web hash 应与其他场景一致');
+echo "[OK] Web hash 一致: " . $h_web . "\n";
+
+$ok = Xhsm\Scenario\Web::verify($pk, 'tampered', $sig_web);
+assert_true(!$ok, 'Web 篡改数据验签应失败');
+echo "[OK] Web 篡改数据验签失败验证通过\n";
+
 // ---------- 场景间输出格式差异验证 ----------
 echo "--- 场景间输出格式差异 ---\n";
 // Finance 与 Government 都是 DER+hex，但 SM2 签名使用随机 nonce，两次签名结果不同

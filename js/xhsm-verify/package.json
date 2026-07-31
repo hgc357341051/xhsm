@@ -1,0 +1,48 @@
+{
+  "name": "xhsm-verify",
+  "version": "0.1.0",
+  "description": "xhsm 国密扩展前端验签工具包：封装 SM2 签名格式转换与多端验签，配合 PHP xhsm 扩展使用",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "types": "./index.d.ts"
+    },
+    "./miniprogram": {
+      "require": "./miniprogram.js",
+      "types": "./miniprogram.d.ts"
+    },
+    "./web": {
+      "require": "./web.js",
+      "types": "./web.d.ts"
+    }
+  },
+  "scripts": {
+    "test": "node test/codec.test.js && node test/verify.test.js"
+  },
+  "peerDependencies": {
+    "miniprogram-sm-crypto": "^0.4.0",
+    "sm-crypto": "^0.3.0"
+  },
+  "peerDependenciesMeta": {
+    "miniprogram-sm-crypto": { "optional": true },
+    "sm-crypto": { "optional": true }
+  },
+  "devDependencies": {
+    "sm-crypto": "^0.3.0"
+  },
+  "keywords": ["sm2", "sm3", "sm4", "sm9", "国密", "gm", "xhsm", "php", "verify", "signature"],
+  "license": "MIT",
+  "author": "xhsm",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "miniprogram.js",
+    "miniprogram.d.ts",
+    "web.js",
+    "web.d.ts",
+    "src/",
+    "README.md"
+  ]
+}

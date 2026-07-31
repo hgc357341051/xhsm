@@ -9,7 +9,7 @@ xhsm 是一个基于 Rust（[ext-php-rs](https://github.com/phper-framework/ext-
 - **纯 Rust 实现，无 OpenSSL 依赖**：所有密码学算法来自 Rust 生态 crate（smcrypto / RustCrypto sm3·sm4·ghash / sm9），构建产物不链接系统 `libssl`/`libcrypto`，部署环境无需安装 OpenSSL 开发库。
 - **国密算法全覆盖**：SM2（非对称）、SM3（摘要 + HMAC）、SM4（ECB/CBC/CTR/GCM 对称）、SM9（标识基加解密与签名验签）。
 - **可扩展签名版本体系**：内置 `s2`/`s3`/`s4` 三个签名版本（DER/RAW × hex/base64 组合），支持运行时 `register()` 注册自定义版本。
-- **业务场景预设**：`Xhsm\Scenario\Finance`、`Payment`、`Government`、`MiniProgram` 四个场景类，按行业标准预配置签名与加密参数。
+- **业务场景预设**：`Xhsm\Scenario\Finance`、`Payment`、`Government`、`MiniProgram`、`Uniapp`、`Web` 六个场景类，按行业标准预配置签名与加密参数。
 - **ThinkPHP 8 兼容**：通过 `xhsm/thinkphp` 提供 Manager、Facade、ServiceProvider 与配置发布命令，Wrapper 层做原始字符串↔hex 友好转换。
 - **OOP 静态方法 API**：所有能力以 `Xhsm\Sm2`、`Xhsm\Sm3` 等类的静态方法暴露，统一异常类型 `Xhsm\Exception` 携带语义错误码。
 
@@ -177,7 +177,7 @@ SM9 区分加密主密钥对与签名主密钥对，密钥以 hex 编码的 PEM 
 
 ### Xhsm\Scenario\* —— 业务场景预设
 
-`Finance`、`Payment`、`Government`、`MiniProgram` 四个类，每个提供相同的方法签名，`$data` 均为**原始字符串**：
+`Finance`、`Payment`、`Government`、`MiniProgram`、`Uniapp`、`Web` 六个类，每个提供相同的方法签名，`$data` 均为**原始字符串**：
 
 | 方法 | 说明 |
 | --- | --- |
@@ -250,7 +250,7 @@ var_dump(Xhsm\Signature::verify('s5', $pair['public_key'], 'hello', $sig)); // b
 
 ## 业务场景预设
 
-四个场景类按行业标准预配置签名参数（加密统一使用 SM2 C1C3C2 + hex）：
+六个场景类按行业标准预配置签名参数（加密统一使用 SM2 C1C3C2 + hex）：
 
 | 场景类 | 签名 encoding | 签名 output | 业务标准 |
 | --- | --- | --- | --- |
@@ -258,6 +258,8 @@ var_dump(Xhsm\Signature::verify('s5', $pair['public_key'], 'hello', $sig)); // b
 | `Xhsm\Scenario\Payment` | RAW | hex | 支付行业常用格式（RAW r‖s） |
 | `Xhsm\Scenario\Government` | DER | hex | 政务 PKI 标准（ASN.1 DER） |
 | `Xhsm\Scenario\MiniProgram` | DER | base64 | 小程序平台传输格式（DER + base64） |
+| `Xhsm\Scenario\Uniapp` | RAW | hex | uniapp 跨端格式（sm-crypto 默认，零转换直传） |
+| `Xhsm\Scenario\Web` | RAW | base64 | Web 端格式（体积最小，适合网络传输） |
 
 ```php
 <?php
@@ -275,6 +277,14 @@ var_dump(Xhsm\Scenario\Payment::verify($pair['public_key'], 'payment data', $sig
 $sig = Xhsm\Scenario\MiniProgram::sign($pair['private_key'], 'mini payload');
 var_dump(Xhsm\Scenario\MiniProgram::verify($pair['public_key'], 'mini payload', $sig)); // bool(true)
 
+// uniapp 跨端场景：RAW + hex 签名（sm-crypto 默认格式，前端零转换直传）
+$sig = Xhsm\Scenario\Uniapp::sign($pair['private_key'], 'uniapp payload');
+var_dump(Xhsm\Scenario\Uniapp::verify($pair['public_key'], 'uniapp payload', $sig)); // bool(true)
+
+// Web 端场景：RAW + base64 签名（体积最小）
+$sig = Xhsm\Scenario\Web::sign($pair['private_key'], 'web payload');
+var_dump(Xhsm\Scenario\Web::verify($pair['public_key'], 'web payload', $sig)); // bool(true)
+
 // 场景加密解密（统一 C1C3C2 + hex）
 $ct = Xhsm\Scenario\Finance::encrypt($pair['public_key'], 'hello');
 echo Xhsm\Scenario\Finance::decrypt($pair['private_key'], $ct); // hello
@@ -284,62 +294,72 @@ echo Xhsm\Scenario\Finance::description();
 // 金融行业标准（GB/T 32918 + ASN.1 DER）
 ```
 
-## 小程序端验签
+## 多端验签总览
 
-`Xhsm\Scenario\MiniProgram` 场景输出 **SM2 签名（ASN.1 DER 编码 + base64）**，`user_id` 固定为 `1234567812345678`。小程序端（微信 / 支付宝 / 字节等）可使用 [`sm-crypto`](https://github.com/JuneAndGreen/sm-crypto)（Node/浏览器）或 [`miniprogram-sm-crypto`](https://github.com/wechat-miniprogram/sm-crypto)（小程序专用，依赖小程序 npm 构建）验签。
+`Xhsm\Scenario\*` 输出与 [`sm-crypto`](https://github.com/JuneAndGreen/sm-crypto)（Node/浏览器/Taro/uniapp）和 [`miniprogram-sm-crypto`](https://github.com/wechat-miniprogram/sm-crypto)（微信小程序专用，依赖小程序 npm 构建）完全互通，`user_id` 固定为 `1234567812345678`。签名格式共 4 种组合（s2/s3/s4 + 场景）：`der-hex` / `raw-hex` / `der-base64` / `raw-base64`。前端可使用统一封装包 `xhsm-verify`（位于 `js/xhsm-verify/`），或直接调用 sm-crypto 原生 API 验签——注意 sm-crypto 的 `doVerifySignature` 签名入参必须是 **hex**。
 
-### 参数对照
+### a. 全 4 格式 × 3 端对照表
 
-| 参数 | 后端 (xhsm) | 小程序端 (sm-crypto) |
-| --- | --- | --- |
-| 算法 | SM2 | SM2 |
-| user_id | `1234567812345678`（smcrypto 固定） | `userId: '1234567812345678'`（sm-crypto 默认值，显式写出更清晰） |
-| 杂凑 | SM3 + Z 值预处理（smcrypto 默认） | `hash: true`（sm-crypto 默认） |
-| 签名编码 | DER（ASN.1 SEQUENCE） | `der: true` |
-| 签名输出 | **base64** 字符串 | 需转为 **hex** 传入 sm-crypto |
-| 公钥 | hex（130 字符，带 `04` 前缀） | hex（直接传入，sm-crypto 兼容带/不带 `04`） |
+| 签名格式 | 场景 | 签名体积(约) | 前端转换 | 推荐端 |
+| --- | --- | --- | --- | --- |
+| DER + hex | Finance/Government | ~144 字符 | 无需转换（已是 hex），需 `der:true` | 需 ASN.1 标准的后端互操作 |
+| RAW + hex | Payment/Uniapp | 128 字符 | 无（sm-crypto 默认格式，零转换） | 小程序/uniapp（最推荐） |
+| DER + base64 | MiniProgram | ~96 字符 | base64→hex + `der:true` | 体积敏感 + 需 DER |
+| RAW + base64 | Web | ~88 字符 | base64→hex | Web（体积最小） |
 
-> 关键：两端 `user_id`、`hash`、DER 编码必须完全一致，否则验签失败。smcrypto (Rust) 与 sm-crypto (JS) 均遵循 GB/T 32918 标准，Z 值预处理与 SM3 流程互通。
+### b. 选型建议
 
-### 1. 后端：生成签名（PHP）
+小程序/uniapp 端优先 RAW + hex（Uniapp 场景，sm-crypto 默认格式零转换最省事）；Web 端优先 RAW + base64（Web 场景，签名体积最小）；若需与外部 ASN.1 系统互操作（金融/政务 PKI），选 DER 系列（Finance/Government/MiniProgram 场景）。所有 4 种格式 `xhsm-verify` 包均统一支持，调用方仅需切换 `format` 参数。
 
-```php
-<?php
-// 1. 生成密钥对（私钥后端留存，公钥下发小程序）
-$pair = Xhsm\Sm2::generateKeyPair();
-$privateKey = $pair['private_key']; // 64 hex 字符（后端保密）
-$publicKey  = $pair['public_key'];  // 130 hex 字符（下发给小程序）
+### c. 方案一：使用 xhsm-verify 包（推荐）
 
-// 2. 对业务数据签名（DER + base64）
-$data = 'mini payload'; // 业务数据，原始字符串
-$sig  = Xhsm\Scenario\MiniProgram::sign($privateKey, $data);
-// $sig 形如 "MEUCIQD...=="（base64）
+[`xhsm-verify`](./js/xhsm-verify/) 封装了 4 种格式 × 多端入口的统一验签 API，免去手动处理 base64→hex 与 `der`/`hash` 选项。
 
-// 3. 把 publicKey 与 sig 返回给小程序（经 JSON 接口）
-echo json_encode([
-    'public_key' => $publicKey,
-    'data'       => $data,
-    'signature'  => $sig,
-]);
-```
-
-### 2. 小程序端：验签（JS）
-
-安装依赖（在小程序项目根目录）：
+安装（按端区分 peer 依赖）：
 
 ```bash
-# 微信小程序（推荐 miniprogram-sm-crypto，需在开发者工具「工具 → 构建 npm」）
-npm install --save miniprogram-sm-crypto
+# Web / Node / Taro / uniapp（基于构建工具，使用 sm-crypto 原生包）
+npm install xhsm-verify sm-crypto
 
-# 或标准 sm-crypto（适用于 Taro/uni-app 等基于构建工具的小程序框架）
-npm install --save sm-crypto
+# 微信小程序（需在开发者工具「工具 → 构建 npm」）
+npm install xhsm-verify miniprogram-sm-crypto
 ```
 
-验签代码：
+验签代码（三端入口切换 + 两种 format 演示）：
+
+```js
+// Web / Node / Taro / uniapp
+const { verifySignature } = require('xhsm-verify/web')
+// 微信小程序：const { verifySignature } = require('xhsm-verify/miniprogram')
+
+const ok = verifySignature(msg, sig, publicKey, { format: 'raw-hex' })       // Uniapp/Payment 场景
+const ok2 = verifySignature(msg, sig, publicKey, { format: 'der-base64' })  // MiniProgram 场景
+```
+
+`verifySignature(msg, sig, publicKey, { format, userId? })`：`format` ∈ `'der-hex'` | `'raw-hex'` | `'der-base64'` | `'raw-base64'`，`userId` 默认 `'1234567812345678'`。包内还导出 `base64ToHex` / `hexToBase64` 工具函数供手动转换使用。
+
+### d. 方案二：原生 sm-crypto 验签（不用 xhsm-verify）
+
+sm-crypto 原生 API：`sm2.doVerifySignature(msg, sigHex, publicKey, { hash:true, der:bool, userId:'1234567812345678' })`，签名入参必须是 hex。下面覆盖三种典型场景。
+
+#### 1. RAW + hex（Uniapp/Payment 场景，最简单）
+
+```js
+const sm2 = require('sm-crypto').sm2  // 小程序用 require('miniprogram-sm-crypto').sm2
+// 后端 Xhsm\Scenario\Uniapp::sign 输出即 raw-hex，直接传入
+const ok = sm2.doVerifySignature(msg, sig, publicKey, {
+  hash: true,
+  userId: '1234567812345678',
+  // der 不设（默认 false），签名按 RAW r‖s 解析
+})
+```
+
+#### 2. DER + base64（MiniProgram 场景）
+
+后端输出为 base64，需先转 hex 再传入，并设 `der: true`。`base64ToHex` 函数（已验证正确，含防溢出处理）如下：
 
 ```js
 // utils/sm2-verify.js
-// 引入 sm-crypto（按需调整 require 路径与包名）
 const sm2 = require('miniprogram-sm-crypto').sm2
 // const sm2 = require('sm-crypto').sm2  // Taro/uni-app 等
 
@@ -375,7 +395,7 @@ function base64ToHex(base64) {
 }
 
 /**
- * 验证 xhsm MiniProgram 场景签名
+ * 验证 xhsm MiniProgram 场景签名（DER + base64）
  * @param {string} msg       原始业务数据（须与后端签名时的 data 完全一致，UTF-8 字节）
  * @param {string} sigBase64 后端返回的 base64 签名（DER 编码）
  * @param {string} publicKey hex 公钥（后端返回，带或不带 04 前缀均可）
@@ -393,31 +413,23 @@ function verifyMiniProgramSignature(msg, sigBase64, publicKey) {
 module.exports = { verifyMiniProgramSignature, base64ToHex }
 ```
 
-调用示例：
+#### 3. RAW + base64（Web 场景）
+
+后端输出为 base64，需先转 hex 再传入，**不设** `der`（按 RAW r‖s 解析）。复用上面的 `base64ToHex` 工具函数：
 
 ```js
-// pages/index/index.js
-const { verifyMiniProgramSignature } = require('../../utils/sm2-verify.js')
-
-// 假设 wx.request 从后端拿到如下数据
-const res = {
-  public_key: '049d4f8b...（130 hex 字符）',
-  data: 'mini payload',
-  signature: 'MEUCIQD...==',
-}
-
-const ok = verifyMiniProgramSignature(res.data, res.signature, res.public_key)
-console.log(ok) // true 表示验签通过
-if (ok) {
-  wx.showToast({ title: '验签通过' })
-} else {
-  wx.showToast({ title: '验签失败', icon: 'error' })
-}
+const sm2 = require('sm-crypto').sm2  // 小程序用 require('miniprogram-sm-crypto').sm2
+const sigHex = base64ToHex(sigBase64)
+const ok = sm2.doVerifySignature(msg, sigHex, publicKey, {
+  hash: true,
+  userId: '1234567812345678',
+  // der 不设（默认 false），签名按 RAW r‖s 解析
+})
 ```
 
-### 3. 联调测试
+### e. 联调测试与排查清单
 
-两端联调前，建议先在本地验证签名互通性：
+两端联调前，建议先在本地验证签名互通性。后端打印一组测试向量（以 MiniProgram 场景为例，其他场景同理）：
 
 ```php
 <?php
@@ -432,13 +444,14 @@ echo "signature:  " . $sig . "\n";
 echo "verify:     " . (Xhsm\Scenario\MiniProgram::verify($pair['public_key'], $data, $sig) ? 'true' : 'false') . "\n";
 ```
 
-把输出的 `public_key` / `data` / `signature` 三项填入小程序端 `verifyMiniProgramSignature()`，应返回 `true`。若返回 `false`，按以下顺序排查：
+把输出的 `public_key` / `data` / `signature` 三项填入前端验签函数，应返回 `true`。若返回 `false`，按以下顺序排查：
 
-1. **`msg` 不一致**：小程序端传入的字符串须与后端签名时的 `$data` 的 UTF-8 字节完全相同（注意中英文、空格、换行）。
-2. **`publicKey` 被截断/转大小写**：hex 公钥保持原样传入，勿去掉 `04` 前缀（sm-crypto 兼容带/不带，但长度必须正确）。
+1. **`msg` 字节不一致**：前端传入的字符串须与后端签名时 `$data` 的 UTF-8 字节完全相同（注意中英文、空格、换行）。
+2. **`publicKey` 截断/大小写**：hex 公钥保持原样传入，勿去掉 `04` 前缀（sm-crypto 兼容带/不带，但长度必须正确）。
 3. **`userId` 被改**：必须为 `1234567812345678`，与后端 smcrypto 固定值一致。
-4. **`der` / `hash` 漏设**：`der: true` 和 `hash: true` 缺一不可（`hash` 默认 true，但显式写出更安全）。
-5. **base64 → hex 转换错误**：用一组已知 base64（如 `MEUCIQD...==`）对照在线工具验证 `base64ToHex` 输出。
+4. **`der` / `hash` 选项设错**：DER 格式必须 `der:true`，RAW 格式不能设 `der:true`（默认 false）；`hash` 必须 `true`。
+5. **base64 → hex 转换错误**：用 `xhsm-verify` 的 `base64ToHex` 或在线工具对照验证。
+6. **`format` 选错**（`xhsm-verify` 用户）：后端场景与 `format` 对照表见上方 a 节，二者必须匹配。
 
 ## ThinkPHP 8 集成
 

@@ -24,7 +24,7 @@ mod sm4;
 mod sm9;
 
 use exception::Exception;
-use scenario::{Finance, Government, MiniProgram, Payment};
+use scenario::{Finance, Government, MiniProgram, Payment, Uniapp, Web};
 use signature::Signature;
 use sm2::Sm2;
 use sm3::Sm3;
@@ -66,4 +66,6 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .class::<Payment>()
         .class::<Government>()
         .class::<MiniProgram>()
+        .class::<Uniapp>()
+        .class::<Web>()
 }
